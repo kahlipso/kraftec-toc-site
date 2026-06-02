@@ -15,7 +15,7 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #ffffff;
-    --foreground: #b1b1b1;
+    --foreground: #ffffff;
   }
 }
 
@@ -28,4 +28,17 @@ body {
 @keyframes floatUp {
   0%   { transform: translateY(20px); opacity: 0; }
   100% { transform: translateY(0);    opacity: 1; }
+}
+
+@keyframes scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-10%); }
+}
+
+.carousel-track {
+  animation: scroll 28s linear infinite;
+}
+
+.carousel-track:hover {
+  animation-play-state: paused;
 }

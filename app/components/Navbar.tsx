@@ -24,8 +24,8 @@ export default function Navbar() {
         <ul className="text-base text-black flex gap-20 list-none">
           <li><Link href="/" className="hover:text-black/50 active:scale-95 inline-block">Home</Link></li>
           <li><Link href="/check-quote" className="hover:text-black/50 active:scale-95 inline-block">Check a Quote</Link></li>
-          <li><Link href="/" className="hover:text-black/50 active:scale-95 inline-block">A Pro's File</Link></li>
-          <li><Link href="/" className="hover:text-black/50 active:scale-95 inline-block">Why Us</Link></li>
+          <li><Link href="/find-pro" className="hover:text-black/50 active:scale-95 inline-block">Find Your Pro</Link></li>
+          <li><Link href="/why-us" className="hover:text-black/50 active:scale-95 inline-block">Why Us</Link></li>
         </ul>
       </nav>
 

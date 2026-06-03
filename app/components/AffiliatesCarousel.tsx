@@ -12,7 +12,7 @@ export default function AffiliatesCarousel() {
   const base = [...affiliates, ...affiliates, ...affiliates, ...affiliates, ...affiliates];
   const items = [...base, ...base];
   return(
-    <div className="w-full mx-auto justify-center" style={{ animation: "floatUp 0.8s ease-out 0.8s both" }}>
+    <div className="w-full mx-auto justify-center" style={{ animation: "floatUp 1s ease-out" }}>
       <div className="relative overflow-hidden py-8">
         <div className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none" />
         <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none" />

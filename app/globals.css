@@ -38,7 +38,3 @@ body {
 .carousel-track {
   animation: scroll 28s linear infinite;
 }
-
-.carousel-track:hover {
-  animation-play-state: paused;
-}

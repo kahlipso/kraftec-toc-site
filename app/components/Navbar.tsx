@@ -9,14 +9,14 @@ const inter = Inter({
 
 export default function Navbar() {
   return (
-    <header className={`${inter.className} flex items-center justify-between px-6 py-8 bg-white border-b border-gray-200`}>
+    <header className={`${inter.className} flex items-center justify-between px-6 py-5 bg-white border-b border-gray-200`}>
 
       <Link className="px-2" href="/">
         <Image
           src="/kraftec-logo-full.png"
           alt="Kraftec Logo"
           width={240}
-          height={80}
+          height={70}
         />
       </Link>
 

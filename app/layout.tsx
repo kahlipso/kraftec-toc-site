@@ -5,7 +5,8 @@ import { Inter } from 'next/font/google';
 
 const inter = Inter({
   subsets: ['latin'],
-  weight: ['400', '700']
+  weight: ['400', '700'],
+  display: 'swap',
 })
 
 export default function RootLayout({
@@ -15,7 +16,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.className} min-h-full min-w-full flex flex-col`}>
+      <body className={`min-h-full min-w-full flex flex-col`}>
         <Navbar />
         {children}
         <Footer />

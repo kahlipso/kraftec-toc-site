@@ -6,9 +6,11 @@ import { neon } from '@neondatabase/serverless';
 // `next build`). The client is only created when a query actually runs (at request
 // time), where DATABASE_URL is available.
 export function getSql() {
-  const url = process.env.DATABASE_URL;
+  // Local `.env.local` uses DATABASE_URL; on Vercel the Neon integration named it
+  // with a KRA_ prefix (KRA_DATABASE_URL). Accept either so both environments work.
+  const url = process.env.DATABASE_URL ?? process.env.KRA_DATABASE_URL;
   if (!url) {
-    throw new Error('DATABASE_URL is not set');
+    throw new Error('DATABASE_URL (or KRA_DATABASE_URL) is not set');
   }
   return neon(url);
 }

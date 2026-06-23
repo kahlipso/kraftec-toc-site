@@ -2,8 +2,8 @@ import Link from 'next/link';
 import WorkOrderCard from './WorkOrderCard';
 import { getRecentWorkOrders } from '@/app/lib/work-orders';
 
-export default function RecentWorkOrders() {
-  const orders = getRecentWorkOrders();
+export default async function RecentWorkOrders() {
+  const orders = await getRecentWorkOrders();
 
   return (
     <section className="w-full bg-[#f7f7f7] py-20">

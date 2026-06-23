@@ -1,3 +1,14 @@
 import { neon } from '@neondatabase/serverless';
 
-export const sql = neon(process.env.DATABASE_URL!);
+// Returns a Neon SQL client, created lazily *on first use* — not when this module
+// is imported. This matters for the build: importing a file that needs the DB must
+// never crash just because DATABASE_URL isn't set in that environment (e.g. during
+// `next build`). The client is only created when a query actually runs (at request
+// time), where DATABASE_URL is available.
+export function getSql() {
+  const url = process.env.DATABASE_URL;
+  if (!url) {
+    throw new Error('DATABASE_URL is not set');
+  }
+  return neon(url);
+}

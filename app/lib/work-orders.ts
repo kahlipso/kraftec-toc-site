@@ -1,4 +1,4 @@
-import { sql } from './db';
+import { getSql } from './db';
 import type { WorkOrder } from '@/app/types/work-order';
 
 // The database stores columns in snake_case (pro_name); our app uses camelCase
@@ -36,12 +36,14 @@ function rowToWorkOrder(row: Record<string, unknown>): WorkOrder {
 
 /** All work orders, for the homepage list. */
 export async function getRecentWorkOrders(): Promise<WorkOrder[]> {
+  const sql = getSql();
   const rows = await sql`SELECT * FROM work_orders ORDER BY id DESC`;
   return rows.map(rowToWorkOrder);
 }
 
 /** A single work order by id, or undefined if it doesn't exist. */
 export async function getWorkOrder(id: string): Promise<WorkOrder | undefined> {
+  const sql = getSql();
   const rows = await sql`SELECT * FROM work_orders WHERE id = ${id}`;
   return rows[0] ? rowToWorkOrder(rows[0]) : undefined;
 }

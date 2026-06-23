@@ -7,6 +7,10 @@ import Testimonials from './components/Testimonials';
 import PlatformFeatures from './components/PlatformFeatures';
 import ForProfessionals from './components/ForProfessionals';
 
+// Render per-request (not at build) so the work-order list reflects the live
+// database and the build never needs a DB connection.
+export const dynamic = 'force-dynamic';
+
 export default function Home() {
   return (
     <div className="flex flex-col flex-1 font-sans bg-white">

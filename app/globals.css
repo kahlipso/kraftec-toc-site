@@ -23,6 +23,14 @@ body {
   color: var(--foreground);
 }
 
+/* Tailwind v4 removed the default button pointer cursor — put it back. */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
 @keyframes floatUp {
   0%   { transform: translateY(20px); opacity: 0; }
   100% { transform: translateY(0);    opacity: 1; }

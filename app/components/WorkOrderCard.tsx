@@ -32,13 +32,13 @@ export default function WorkOrderCard({ order }: { order: WorkOrder }) {
           )}
 
           {/* Photo count */}
-          {order.photoCount > 0 && (
+          {order.photos.length > 0 && (
             <span className="absolute bottom-3 right-3 inline-flex items-center gap-1 rounded-md bg-black/60 px-2 py-1 text-[10px] font-medium text-white">
               <svg className="size-3" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <rect x="2" y="4" width="12" height="9" rx="1.5" />
                 <circle cx="8" cy="8.5" r="2" />
               </svg>
-              {order.photoCount} photos
+              {order.photos.length} photos
             </span>
           )}
         </div>

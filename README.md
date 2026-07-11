@@ -55,4 +55,4 @@ Work Order Postgres:
     isFairPrice: true,
 
 2. Front page will pull from Google Maps API Key
-3. Will Use Google Places Autocomplete API Key
+3. Will Use Google Places Autocomplete API Key.

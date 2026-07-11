@@ -47,3 +47,10 @@ export async function getWorkOrder(id: string): Promise<WorkOrder | undefined> {
   const rows = await sql`SELECT * FROM work_orders WHERE id = ${id}`;
   return rows[0] ? rowToWorkOrder(rows[0]) : undefined;
 }
+
+/** All work orders completed by a given pro, for the pro profile page. */
+export async function getWorkOrdersByPro(proId: string): Promise<WorkOrder[]> {
+  const sql = getSql();
+  const rows = await sql`SELECT * FROM work_orders WHERE pro_id = ${proId} ORDER BY id DESC`;
+  return rows.map(rowToWorkOrder);
+}

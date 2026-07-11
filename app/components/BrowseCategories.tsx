@@ -1,19 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-
-const categories = [
-  { name: 'Handyperson', slug: 'handyperson' },
-  { name: 'Landscaping', slug: 'landscaping' },
-  { name: 'Plumbing', slug: 'plumbing' },
-  { name: 'Electrical', slug: 'electrical' },
-  { name: 'Remodeling', slug: 'remodeling' },
-  { name: 'Roofing', slug: 'roofing' },
-  { name: 'Painting', slug: 'painting' },
-  { name: 'Cleaning', slug: 'cleaning' },
-  { name: 'HVAC', slug: 'hvac' },
-  { name: 'Windows', slug: 'windows' },
-  { name: 'Concrete', slug: 'concrete' },
-];
+import { trades as categories } from '@/app/lib/trades';
 
 export default function BrowseCategories() {
   return (

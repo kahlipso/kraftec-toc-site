@@ -1,102 +1,17 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { useMapsLibrary } from '@vis.gl/react-google-maps';
+import { usePlacesAutocomplete } from '@/app/lib/finder/usePlacesAutocomplete';
 import type { LatLng } from '@/app/types/finder';
 
-type Suggestion = {
-  id: string;
-  label: string;
-  prediction: google.maps.places.PlacePrediction;
-};
-
-// Address search with Google Places (New) autocomplete. As the user types we
-// fetch suggestions; picking one resolves its lat/lng and calls onSelect, which
-// the parent uses to recenter the map and filter nearby pros.
-//
-// Degrades gracefully: with no Places library available (no API key), it renders
-// a plain, non-interactive input so the page still works.
+// The hero's address bar. All the Google logic lives in usePlacesAutocomplete —
+// this file is only the look: the pill input, the Search button, the dropdown.
 export default function AddressAutocomplete({
   onSelect,
 }: {
   onSelect: (location: LatLng, label: string) => void;
 }) {
-  const placesLib = useMapsLibrary('places');
-  const [value, setValue] = useState('');
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-  const [open, setOpen] = useState(false);
-  const sessionToken = useRef<google.maps.places.AutocompleteSessionToken | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  // Fresh session token per editing session (reset after each selection).
-  useEffect(() => {
-    if (placesLib && !sessionToken.current) {
-      sessionToken.current = new placesLib.AutocompleteSessionToken();
-    }
-  }, [placesLib]);
-
-  // Close the dropdown on outside click.
-  useEffect(() => {
-    function onDocClick(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', onDocClick);
-    return () => document.removeEventListener('mousedown', onDocClick);
-  }, []);
-
-  // Debounced suggestion fetch. All state updates happen inside the debounced
-  // callback (never synchronously in the effect body).
-  useEffect(() => {
-    if (!placesLib) return;
-    const input = value.trim();
-    const handle = setTimeout(async () => {
-      if (input.length < 3) {
-        setSuggestions([]);
-        setOpen(false);
-        return;
-      }
-      try {
-        const { suggestions: results } =
-          await placesLib.AutocompleteSuggestion.fetchAutocompleteSuggestions({
-            input,
-            sessionToken: sessionToken.current ?? undefined,
-            includedRegionCodes: ['us'],
-          });
-        setSuggestions(
-          results
-            .filter((s) => s.placePrediction)
-            .map((s) => ({
-              id: s.placePrediction!.placeId,
-              label: s.placePrediction!.text.text,
-              prediction: s.placePrediction!,
-            })),
-        );
-        setOpen(true);
-      } catch {
-        setSuggestions([]);
-      }
-    }, 300);
-    return () => clearTimeout(handle);
-  }, [value, placesLib]);
-
-  async function choose(suggestion: Suggestion) {
-    setValue(suggestion.label);
-    setOpen(false);
-    setSuggestions([]);
-    try {
-      const place = suggestion.prediction.toPlace();
-      await place.fetchFields({ fields: ['location', 'formattedAddress'] });
-      if (place.location) {
-        onSelect({ lat: place.location.lat(), lng: place.location.lng() }, suggestion.label);
-      }
-    } catch {
-      /* ignore resolve failures */
-    }
-    // Start a new billing session for the next search.
-    sessionToken.current = placesLib ? new placesLib.AutocompleteSessionToken() : null;
-  }
+  const { containerRef, value, setValue, suggestions, open, setOpen, choose } =
+    usePlacesAutocomplete(onSelect);
 
   return (
     <div ref={containerRef} className="relative mt-8 w-full max-w-2xl">

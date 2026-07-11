@@ -1,76 +1,82 @@
-'use client'
+import TradePicker from './TradePicker';
+import { isTrade } from '@/app/lib/trades';
 
-import { useState } from 'react';
-import ProCard from '@/app/components/ProfileCard';
-import AddressSearchBar from '@/app/components/AddressSearchBar';
-import type { Pro } from '@/app/types/pro';
-
-type SearchStatus = 'idle' | 'loading' | 'available' | 'unavailable' | 'invalid';
-
-// 👇 replace this with your DB query later, e.g. const pros = await db.getPros()
-const mockPros: Pro[] = [
+const steps = [
   {
-    id: 'martinez-reyes',
-    name: 'Martinez & Reyes HVAC',
-    type: 'Family-owned',
-    yearsInBusiness: 14,
-    distanceMiles: 4.2,
-    tags: ['Residential', 'Repair', 'Replacement', 'Spanish'],
-    checks: { licenseCurrent: true, insuranceVerified: true, backgroundChecked: true, epa608Cert: true },
-    outcomeScore: 96,
-    vsFair: 4,
+    icon: '📍',
+    n: '01',
+    title: 'Tell us where you are',
+    body: "Enter your address so we can find the closest verified pros to your home. That's all we need to start.",
   },
   {
-    id: 'desert-cool',
-    name: 'Desert Cool Services',
-    type: 'Owner-operator',
-    yearsInBusiness: 9,
-    distanceMiles: 7.1,
-    tags: ['Residential', 'Repair', 'Maintenance'],
-    checks: { licenseCurrent: true, insuranceVerified: true, backgroundChecked: true, epa608Cert: true },
-    outcomeScore: 94,
-    vsFair: 2,
+    icon: '🔗',
+    n: '02',
+    title: 'We match you to one pro',
+    body: 'We surface the closest, best-value verified pro for your job — outcome-scored, never paid placement.',
   },
-  // ...add more
+  {
+    icon: '🔒',
+    n: '03',
+    title: 'Book — your number stays private',
+    body: 'Only the pro you choose gets contacted, and only after you confirm. We never sell your number.',
+  },
 ];
 
-export default function FindYourPro() {
-  const [searchStatus, setSearchStatus] = useState<SearchStatus>('idle');
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ category?: string }>;
+}) {
+  // Read the trade the homepage sent us via ?category=. If it's missing or not a
+  // real trade (e.g. arrived from the navbar), start with nothing selected.
+  const { category } = await searchParams;
+  const initialTrade = isTrade(category) ? category : null;
 
   return (
-    <div className="flex flex-col items-center bg-white font-sans">
-      <main className="w-full max-w-3xl mx-auto min-h-screen max-h-24 px-10 py-16 flex flex-col gap-6">
+    <div className="bg-white pb-20">
+      <div className="mx-auto max-w-5xl px-6 pt-10">
+        {/* Header */}
+        <h1 className="text-3xl font-bold tracking-tight text-black">Find an honest pro near you.</h1>
+        <p className="mt-1 text-sm text-zinc-500">
+          Outcome-verified. Continuously re-checked. No paid placement.
+        </p>
 
-        <div>
-          <h1 className="text-4xl font-medium text-black">Honest pros near you</h1>
-          <p className="text-md text-gray-500 mt-1">
-            Outcome-verified.
+        {/* Trade picker + conditional address bar */}
+        <TradePicker initialTrade={initialTrade} />
+
+        {/* How it works */}
+        <section className="mt-20">
+          <p className="flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-widest text-[#d01111]">
+            <span className="size-2 rounded-full bg-[#d01111]" />
+            How it works
           </p>
-        </div>
+          <h2 className="mt-4 text-center text-3xl font-bold tracking-tight text-black sm:text-4xl">
+            Enter your address to <span className="italic text-[#d01111]">get started</span>.
+          </h2>
+          <p className="mt-3 text-center text-base text-zinc-500">
+            Three steps, no spam calls, and your number stays private until you decide to book.
+          </p>
 
-        <AddressSearchBar onResult={r => setSearchStatus(r.status)} />
-
-        {/* Results */}
-        {searchStatus === 'loading' && (
-          <p className="text-sm text-gray-400">Finding pros near you...</p>
-        )}
-
-        {searchStatus === 'available' && (
-          <div className="flex flex-col gap-4">
-            <p className="text-sm text-gray-500">
-              {mockPros.length} verified pros found.
-            </p>
-            {mockPros.map(pro => (
-              <ProCard key={pro.id} pro={pro} />
+          <div className="mt-10 grid gap-5 md:grid-cols-3">
+            {steps.map((step) => (
+              <div key={step.n} className="rounded-2xl border border-gray-200 bg-white p-6">
+                <div className="flex items-start justify-between">
+                  <span className="flex size-14 items-center justify-center rounded-full bg-[#d01111]/10 text-2xl">
+                    {step.icon}
+                  </span>
+                  <span className="text-4xl font-bold text-[#d01111]/15">{step.n}</span>
+                </div>
+                <h3 className="mt-5 text-lg font-semibold text-black">{step.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-zinc-500">{step.body}</p>
+              </div>
             ))}
           </div>
-        )}
 
-        {searchStatus === 'idle' && (
-          <p className="text-sm text-gray-400">Enter your address to find pros near you.</p>
-        )}
-
-      </main>
+          <p className="mt-8 text-center text-sm text-zinc-500">
+            🔒 Free to use · No shared leads · Outcome-verified pros only
+          </p>
+        </section>
+      </div>
     </div>
   );
 }

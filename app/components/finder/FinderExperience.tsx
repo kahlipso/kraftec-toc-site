@@ -120,7 +120,7 @@ export default function FinderExperience() {
               {visiblePros.map((pro) => {
                 const s = statusStyles[pro.status];
                 return (
-                  <div key={pro.id} className="rounded-xl border border-gray-200 bg-white p-3">
+                  <Link key={pro.id} href={`/pro/${pro.id}`} className="block rounded-xl border border-gray-200 bg-white p-3 transition-colors hover:border-gray-300 hover:shadow-sm">
                     <div className="flex items-start gap-3">
                       <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-black text-[11px] font-semibold text-white">
                         {pro.initials}
@@ -137,7 +137,7 @@ export default function FinderExperience() {
                       </span>
                       <span className="text-[11px] text-gray-500">{pro.meta}</span>
                     </div>
-                  </div>
+                  </Link>
                 );
               })}
             </div>

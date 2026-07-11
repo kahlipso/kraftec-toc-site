@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getWorkOrder } from '@/app/lib/work-orders';
 import PhotoGallery from '@/app/components/PhotoGallery';
@@ -31,12 +32,12 @@ export default async function Page({
         </h1>
 
         <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-zinc-500">
-          <span className="flex items-center gap-2">
+          <Link href={`/pro/${order.proId}`} className="flex items-center gap-2 hover:opacity-80">
             <span className="flex size-7 items-center justify-center rounded-full bg-black text-[10px] font-semibold text-white">
               {order.proInitials}
             </span>
-            <span className="font-medium text-zinc-700">{order.proName}</span>
-          </span>
+            <span className="font-medium text-zinc-700 hover:underline">{order.proName}</span>
+          </Link>
           <span>· {order.outcomeScore}% outcome score</span>
           <span>· 📍 {order.location.city}, {order.location.state} {order.location.zip}</span>
           <span>· Completed <span className="font-medium text-zinc-700">{order.completedDate}</span></span>

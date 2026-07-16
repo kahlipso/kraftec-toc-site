@@ -41,6 +41,13 @@ export type ProProfile = {
   type: string; // "Family-owned"
   location: string; // "Rancho Santa Margarita, CA"
   yearsOperating: number;
+  lat: number;
+  lng: number;
+  trades: string[];
+  contactName: string;
+  note: string;
+  rating: number;
+  verifiedJobs: number;
   tags: string[];
   outcomeScore: number;
   verification: ProVerification[];

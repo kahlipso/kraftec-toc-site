@@ -21,8 +21,8 @@ export default function Home() {
         <AffiliatesCarousel />
         <KnowThePrice />
         <Testimonials />
-        <PlatformFeatures />
-        <ForProfessionals />
+        {/*<PlatformFeatures />
+        <ForProfessionals /> */}
       </main>
     </div>
   );

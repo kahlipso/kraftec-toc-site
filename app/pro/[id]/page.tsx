@@ -28,7 +28,7 @@ export default async function Page({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const pro = getPro(id);
+  const pro = await getPro(id);
   if (!pro) notFound();
 
   const workOrders = await getWorkOrdersByPro(pro.id);
@@ -55,7 +55,7 @@ export default async function Page({
             ))}
           </ul>
           <Link
-            href="/find-pro"
+            href={`/pro/${pro.id}/book`}
             className="ml-4 shrink-0 rounded-full bg-[#d01111] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#d01111]/90 active:scale-95"
           >
             Book a time slot →

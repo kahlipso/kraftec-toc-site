@@ -46,8 +46,8 @@ export default function FinderExperience() {
 
   const inner = (
     <>
-      {/* Address search */}
-      <div className="flex justify-center">
+      {/* Address search — stays in the centered column */}
+      <div className="flex justify-center px-6">
         {hasMaps ? (
           <AddressAutocomplete onSelect={(loc, label) => setSearched({ loc, label })} />
         ) : (
@@ -66,86 +66,85 @@ export default function FinderExperience() {
         )}
       </div>
 
-      {/* Map + list */}
-      <div className="mt-12 grid gap-6 lg:grid-cols-[1.7fr_1fr]">
-        {/* Map */}
-        <div className="relative h-[460px] overflow-hidden rounded-2xl border border-gray-200 bg-[#f3f3f1]">
-          {hasMaps ? (
-            <LiveMap
-              center={center}
-              pros={visiblePros}
-              mapId={mapId!}
-              onDirectionsService={onDirectionsService}
-            />
-          ) : (
-            <StaticMapFallback />
-          )}
+      {/* Full-bleed map — a backdrop band you scroll past */}
+      <div className="relative mt-12 h-[78vh] min-h-[560px] w-full overflow-hidden border-y border-gray-200 bg-[#f3f3f1]">
+        {hasMaps ? (
+          <LiveMap
+            center={center}
+            pros={visiblePros}
+            mapId={mapId!}
+            onDirectionsService={onDirectionsService}
+          />
+        ) : (
+          <StaticMapFallback />
+        )}
 
-          {/* Floating overlay cards — bound to the live snapshot */}
-          <div className="pointer-events-none absolute left-3 top-3 z-30 rounded-xl border border-gray-200 bg-white px-3 py-2 shadow-sm">
-            <p className="flex items-center gap-1.5 text-xs font-semibold text-black">
-              <span className="size-1.5 rounded-full bg-green-500" />
-              {visiblePros.length} pros nearby
-            </p>
-            <p className="text-[11px] text-gray-500">{searched ? searched.label : 'Avg ETA · 14 min'}</p>
-          </div>
-          <div className="pointer-events-none absolute bottom-3 left-1/2 z-30 flex -translate-x-1/2 items-center gap-3 rounded-full border border-gray-200 bg-white px-4 py-2 shadow-sm">
-            <span className="flex items-center gap-1.5 text-xs font-medium text-black">
-              <span className="size-1.5 rounded-full bg-green-500" />
-              {jobsInProgress} jobs in progress near you
-            </span>
-            <span className="text-[11px] font-bold tracking-wide text-[#d01111]">LIVE</span>
-          </div>
+        {/* Floating overlay cards — bound to the live snapshot */}
+        <div className="pointer-events-none absolute left-6 top-4 z-30 rounded-xl border border-gray-200 bg-white px-3 py-2 shadow-sm">
+          <p className="flex items-center gap-1.5 text-xs font-semibold text-black">
+            <span className="size-1.5 rounded-full bg-green-500" />
+            {visiblePros.length} pros nearby
+          </p>
+          <p className="text-[11px] text-gray-500">{searched ? searched.label : 'Avg ETA · 14 min'}</p>
+        </div>
+        <div className="pointer-events-none absolute bottom-4 left-6 z-30 flex items-center gap-3 rounded-full border border-gray-200 bg-white px-4 py-2 shadow-sm">
+          <span className="flex items-center gap-1.5 text-xs font-medium text-black">
+            <span className="size-1.5 rounded-full bg-green-500" />
+            {jobsInProgress} jobs in progress near you
+          </span>
+          <span className="text-[11px] font-bold tracking-wide text-[#d01111]">LIVE</span>
         </div>
 
-        {/* Available near you */}
-        <div className="flex flex-col">
-          <div className="mb-3 flex items-center justify-between">
-            <p className="text-xs font-semibold uppercase tracking-widest text-gray-500">Available near you</p>
-            <button className="flex items-center gap-1 text-xs font-medium uppercase tracking-wide text-gray-500">
-              Trades
-              <svg className="size-3" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path d="m3 4.5 3 3 3-3" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-          </div>
-
-          {visiblePros.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-gray-300 bg-white p-6 text-center">
-              <p className="text-sm font-medium text-black">No pros near {searched?.label ?? 'you'} yet</p>
-              <p className="mt-1 text-xs text-gray-500">We&apos;re expanding — try a nearby city or check back soon.</p>
+        {/* Available near you — floating panel over the right edge of the map */}
+        <div className="absolute bottom-4 right-6 top-4 z-30 hidden w-[300px] flex-col md:flex">
+          <div className="flex min-h-0 flex-1 flex-col rounded-2xl border border-gray-200 bg-white/90 p-3 shadow-lg backdrop-blur">
+            <div className="mb-3 flex items-center justify-between px-1">
+              <p className="text-xs font-semibold uppercase tracking-widest text-gray-500">Available near you</p>
+              <button className="flex items-center gap-1 text-xs font-medium uppercase tracking-wide text-gray-500">
+                Trades
+                <svg className="size-3" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="m3 4.5 3 3 3-3" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
             </div>
-          ) : (
-            <div className="flex flex-col gap-3">
-              {visiblePros.map((pro) => {
-                const s = statusStyles[pro.status];
-                return (
-                  <Link key={pro.id} href={`/pro/${pro.id}`} className="block rounded-xl border border-gray-200 bg-white p-3 transition-colors hover:border-gray-300 hover:shadow-sm">
-                    <div className="flex items-start gap-3">
-                      <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-black text-[11px] font-semibold text-white">
-                        {pro.initials}
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold text-black">{pro.name}</p>
-                        <p className="text-xs text-gray-500">★ {pro.rating} · {pro.trade}</p>
+
+            {visiblePros.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-gray-300 bg-white p-6 text-center">
+                <p className="text-sm font-medium text-black">No pros near {searched?.label ?? 'you'} yet</p>
+                <p className="mt-1 text-xs text-gray-500">We&apos;re expanding — try a nearby city or check back soon.</p>
+              </div>
+            ) : (
+              <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
+                {visiblePros.map((pro) => {
+                  const s = statusStyles[pro.status];
+                  return (
+                    <Link key={pro.id} href={`/pro/${pro.id}`} className="block shrink-0 rounded-xl border border-gray-200 bg-white p-3 transition-colors hover:border-gray-300 hover:shadow-sm">
+                      <div className="flex items-start gap-3">
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-black text-[11px] font-semibold text-white">
+                          {pro.initials}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold text-black">{pro.name}</p>
+                          <p className="text-xs text-gray-500">★ {pro.rating} · {pro.trade}</p>
+                        </div>
                       </div>
-                    </div>
-                    <div className="mt-2.5 flex items-center justify-between">
-                      <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[11px] font-medium ${s.pill}`}>
-                        <span className={`size-1.5 rounded-full ${s.dot}`} />
-                        {pro.statusLabel}
-                      </span>
-                      <span className="text-[11px] text-gray-500">{pro.meta}</span>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          )}
+                      <div className="mt-2.5 flex items-center justify-between">
+                        <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[11px] font-medium ${s.pill}`}>
+                          <span className={`size-1.5 rounded-full ${s.dot}`} />
+                          {pro.statusLabel}
+                        </span>
+                        <span className="text-[11px] text-gray-500">{pro.meta}</span>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
 
-          <Link href="/find-pro" className="mt-4 text-sm font-semibold text-[#d01111] hover:underline">
-            See all available →
-          </Link>
+            <Link href="/find-pro" className="mt-3 px-1 text-sm font-semibold text-[#d01111] hover:underline">
+              See all available →
+            </Link>
+          </div>
         </div>
       </div>
     </>

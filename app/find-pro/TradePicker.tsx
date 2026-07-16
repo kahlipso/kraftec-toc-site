@@ -2,23 +2,71 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import { APIProvider } from '@vis.gl/react-google-maps';
+import { usePlacesAutocomplete } from '@/app/lib/finder/usePlacesAutocomplete';
 import { trades } from '@/app/lib/trades';
+import type { LatLng } from '@/app/types/finder';
+import MatchOverlay from './MatchOverlay';
 
-// `initialTrade` comes from the page, which read it out of the URL's ?category=
-// param. That's how a trade picked on the home page arrives here pre-selected.
-// When the page is opened from the navbar there's no param, so it's null and
-// nothing starts highlighted.
+const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+
+type Picked = { lat: number; lng: number; label: string };
+
+// The find-pro address bar: same engine as the hero (usePlacesAutocomplete),
+// different body. Reports a confirmed pick up to TradePicker via onPick.
+function AddressSearch({ onPick }: { onPick: (p: Picked | null) => void }) {
+  const { containerRef, value, setValue, suggestions, open, setOpen, choose } =
+    usePlacesAutocomplete((loc: LatLng, label: string) => onPick({ ...loc, label }));
+
+  return (
+    <div ref={containerRef} className="relative flex-1">
+      <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-5 py-3 focus-within:border-gray-400">
+        <svg className="size-5 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
+        </svg>
+        <input
+          value={value}
+          onChange={(e) => {
+            setValue(e.target.value);
+            onPick(null); // typing again invalidates the previous pick
+          }}
+          onFocus={() => suggestions.length > 0 && setOpen(true)}
+          placeholder="Enter your address or ZIP"
+          className="flex-1 bg-transparent text-sm text-black placeholder:text-gray-400 focus:outline-none"
+        />
+      </div>
+
+      {open && suggestions.length > 0 && (
+        <ul className="absolute left-0 right-0 top-full z-40 mt-2 overflow-hidden rounded-2xl border border-gray-200 bg-white py-1 text-left shadow-lg">
+          {suggestions.map((s) => (
+            <li key={s.id}>
+              <button
+                type="button"
+                onClick={() => choose(s)}
+                className="flex w-full items-center gap-2 px-5 py-2.5 text-left text-sm text-zinc-700 hover:bg-gray-50"
+              >
+                <svg className="size-4 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
+                </svg>
+                {s.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 export default function TradePicker({ initialTrade }: { initialTrade: string | null }) {
   const [selected, setSelected] = useState<string | null>(initialTrade);
-  const [address, setAddress] = useState('');
-  const [submittedFor, setSubmittedFor] = useState<string | null>(null);
+  const [picked, setPicked] = useState<Picked | null>(null);
+  const [searching, setSearching] = useState(false);
 
   const selectedTrade = trades.find((t) => t.slug === selected);
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (address.trim()) setSubmittedFor(address.trim());
-  }
+  const canSearch = Boolean(selectedTrade && picked);
 
   return (
     <div className="mt-10">
@@ -66,36 +114,45 @@ export default function TradePicker({ initialTrade }: { initialTrade: string | n
         })}
       </div>
 
-      {/* Address bar — only appears once a trade is selected */}
+      {/* Address search — appears once a trade is selected */}
       {selectedTrade && (
-        <form onSubmit={handleSubmit} className="mx-auto mt-8 flex max-w-2xl gap-3">
-          <div className="flex flex-1 items-center gap-2 rounded-full border border-gray-200 bg-white px-5 py-3 focus-within:border-gray-400">
-            <svg className="size-5 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
-            </svg>
-            <input
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              placeholder="Enter your address or ZIP"
-              className="flex-1 bg-transparent text-sm text-black placeholder:text-gray-400 focus:outline-none"
-            />
+        apiKey ? (
+          <APIProvider apiKey={apiKey}>
+            <div className="mx-auto mt-8 flex max-w-2xl gap-3">
+              <AddressSearch onPick={setPicked} />
+              <button
+                type="button"
+                disabled={!canSearch}
+                onClick={() => setSearching(true)}
+                className="shrink-0 rounded-full bg-[#d01111] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#d01111]/90 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Find pros →
+              </button>
+            </div>
+          </APIProvider>
+        ) : (
+          <div className="mx-auto mt-8 flex max-w-2xl gap-3">
+            <div className="flex flex-1 items-center gap-2 rounded-full border border-gray-200 bg-white px-5 py-3">
+              <input
+                placeholder="Address search requires the Maps key"
+                disabled
+                className="flex-1 bg-transparent text-sm text-black placeholder:text-gray-400"
+              />
+            </div>
+            <button disabled className="shrink-0 rounded-full bg-[#d01111] px-6 py-3 text-sm font-semibold text-white opacity-40">
+              Find pros →
+            </button>
           </div>
-          <button
-            type="submit"
-            className="shrink-0 rounded-full bg-[#d01111] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#d01111]/90 active:scale-95"
-          >
-            Find pros →
-          </button>
-        </form>
+        )
       )}
 
-      {/* Search acknowledgment (the matching results view is a separate frame) */}
-      {submittedFor && selectedTrade && (
-        <p className="mt-4 text-center text-sm text-zinc-500">
-          Finding verified <span className="font-medium text-black">{selectedTrade.name}</span> pros near{' '}
-          <span className="font-medium text-black">{submittedFor}</span>…
-        </p>
+      {/* The match pop-up — mounting it starts the search */}
+      {searching && selectedTrade && picked && (
+        <MatchOverlay
+          trade={selectedTrade}
+          location={picked}
+          onClose={() => setSearching(false)}
+        />
       )}
     </div>
   );

@@ -51,7 +51,8 @@ export default function Footer() {
             <ul className="flex flex-col gap-2 text-sm text-gray-500 py-3">
               <li><Link href="/">Contact</Link></li>
               <li><Link href="/">Support</Link></li>
-              <li><Link href="/">Legal</Link></li>
+              <li><Link href="/privacy">Privacy Policy</Link></li>
+              <li><Link href="/terms">Terms of Service</Link></li>
             </ul>
           </div>
 

@@ -1,4 +1,4 @@
-import { benchmarks } from './benchmarks';
+import { benchmarks, type TradeBenchmark } from './benchmarks';
 import { trades } from './trades';
 import type { AnalyzedLine, LineFlag, QuoteAnalysis } from '@/app/types/quote';
 
@@ -23,9 +23,10 @@ function flagFor(cost: number, high: number): LineFlag {
 export function analyzeQuote(
   serviceSlug: string,
   rows: QuoteRowInput[],
+  benchmarkSet: Record<string, TradeBenchmark> = benchmarks,
 ): QuoteAnalysis | null {
   const trade = trades.find((t) => t.slug === serviceSlug);
-  const bench = benchmarks[serviceSlug];
+  const bench = benchmarkSet[serviceSlug];
   if (!trade || !bench) return null;
 
   // Keep only rows with a name and a positive price.

@@ -39,23 +39,48 @@ function byMostRecent(a: WorkOrder, b: WorkOrder): number {
   return new Date(b.completedDate).getTime() - new Date(a.completedDate).getTime();
 }
 
+function isMissingAdminColumn(error: unknown) {
+  return typeof error === 'object' && error !== null &&
+    (String((error as { message?: unknown }).message).includes('archived_at') ||
+      String((error as { message?: unknown }).message).includes('is_published'));
+}
+
 /** All work orders, most recently completed first. */
 export async function getRecentWorkOrders(): Promise<WorkOrder[]> {
   const sql = getSql();
-  const rows = await sql`SELECT * FROM work_orders`;
+  let rows;
+  try {
+    rows = await sql`SELECT * FROM work_orders WHERE archived_at IS NULL AND is_published = TRUE`;
+  } catch (error) {
+    // The public site stays live until the optional admin migration is applied.
+    if (!isMissingAdminColumn(error)) throw error;
+    rows = await sql`SELECT * FROM work_orders`;
+  }
   return rows.map(rowToWorkOrder).sort(byMostRecent);
 }
 
 /** A single work order by id, or undefined if it doesn't exist. */
 export async function getWorkOrder(id: string): Promise<WorkOrder | undefined> {
   const sql = getSql();
-  const rows = await sql`SELECT * FROM work_orders WHERE id = ${id}`;
+  let rows;
+  try {
+    rows = await sql`SELECT * FROM work_orders WHERE id = ${id} AND archived_at IS NULL AND is_published = TRUE`;
+  } catch (error) {
+    if (!isMissingAdminColumn(error)) throw error;
+    rows = await sql`SELECT * FROM work_orders WHERE id = ${id}`;
+  }
   return rows[0] ? rowToWorkOrder(rows[0]) : undefined;
 }
 
 /** All work orders completed by a given pro, for the pro profile page. */
 export async function getWorkOrdersByPro(proId: string): Promise<WorkOrder[]> {
   const sql = getSql();
-  const rows = await sql`SELECT * FROM work_orders WHERE pro_id = ${proId} ORDER BY id DESC`;
+  let rows;
+  try {
+    rows = await sql`SELECT * FROM work_orders WHERE pro_id = ${proId} AND archived_at IS NULL AND is_published = TRUE ORDER BY id DESC`;
+  } catch (error) {
+    if (!isMissingAdminColumn(error)) throw error;
+    rows = await sql`SELECT * FROM work_orders WHERE pro_id = ${proId} ORDER BY id DESC`;
+  }
   return rows.map(rowToWorkOrder);
 }

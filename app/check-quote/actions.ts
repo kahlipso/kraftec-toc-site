@@ -2,7 +2,7 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import { analyzeQuote, type QuoteRowInput } from '@/app/lib/quote-analysis';
-import { benchmarks } from '@/app/lib/benchmarks';
+import { getBenchmarksForQuote } from '@/app/lib/benchmarks-store';
 import { isTrade } from '@/app/lib/trades';
 import type { QuoteAnalysis, QuoteCheckResult, QuoteQuestion } from '@/app/types/quote';
 
@@ -85,11 +85,12 @@ export async function checkQuote(input: {
 }): Promise<QuoteCheckResult> {
   if (!isTrade(input.service)) return { ok: false, error: 'invalid_service' };
 
-  const analysis = analyzeQuote(input.service, input.rows);
+  const benchmarkSet = await getBenchmarksForQuote();
+  const analysis = analyzeQuote(input.service, input.rows, benchmarkSet);
   if (!analysis) return { ok: false, error: 'no_priced_lines' };
 
   const aiQuestions = await generateQuestions(analysis, input.notes);
-  const questions = aiQuestions ?? benchmarks[input.service].cannedQuestions;
+  const questions = aiQuestions ?? benchmarkSet[input.service].cannedQuestions;
 
   return { ...analysis, ok: true, questions, aiGenerated: aiQuestions !== null };
 }

@@ -1,0 +1,10 @@
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import { updateWorkOrder } from '@/app/admin/actions';
+import { getAdminWorkOrder } from '@/app/lib/admin';
+
+export default async function WorkOrderPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params; const order = await getAdminWorkOrder(id); if (!order) notFound();
+  const field = 'mt-1.5 w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm';
+  return <><Link href="/admin/work-orders" className="text-sm font-semibold text-[#d01111] hover:underline">← All work orders</Link><p className="mt-6 text-xs font-semibold uppercase tracking-widest text-[#d01111]">{order.id}</p><h2 className="mt-2 text-4xl font-bold tracking-tight">Manage work order</h2><form action={updateWorkOrder} className="mt-8 max-w-2xl rounded-2xl border border-gray-200 bg-white p-6"><input type="hidden" name="id" value={order.id} /><p className="text-sm text-zinc-500">Assigned technician: <span className="font-medium text-black">{order.proName}</span> · Completed {order.completedDate}</p><label className="mt-6 block text-sm font-medium">Title<input required name="title" defaultValue={order.title} className={field} /></label><label className="mt-4 block text-sm font-medium">Description<textarea name="description" defaultValue={order.description} rows={4} className={field} /></label><div className="mt-4 grid gap-4 sm:grid-cols-3"><label className="text-sm font-medium">Total paid<input required name="totalPaid" defaultValue={order.totalPaid} className={field} /></label><label className="text-sm font-medium">Outcome score<input name="outcomeScore" defaultValue={order.outcomeScore} className={field} /></label><label className="text-sm font-medium">Verified months<input name="verifiedAtMonths" defaultValue={order.verifiedAtMonths} className={field} /></label></div><label className="mt-5 flex items-center gap-3 text-sm"><input type="checkbox" name="isPublished" defaultChecked={order.published} /> Published on public work pages</label><button className="mt-6 rounded-full bg-[#d01111] px-6 py-3 text-sm font-semibold text-white">Save changes</button></form></>;
+}

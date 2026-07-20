@@ -28,10 +28,21 @@ function rowToProProfile(row: Record<string, unknown>): ProProfile {
   };
 }
 
+function isMissingArchivedColumn(error: unknown) {
+  return typeof error === 'object' && error !== null &&
+    String((error as { message?: unknown }).message).includes('archived_at');
+}
+
 /** A single pro profile by id, or undefined if it doesn't exist. */
 export async function getPro(id: string): Promise<ProProfile | undefined> {
   const sql = getSql();
-  const rows = await sql`SELECT * FROM pros WHERE id = ${id}`;
+  let rows;
+  try {
+    rows = await sql`SELECT * FROM pros WHERE id = ${id} AND archived_at IS NULL`;
+  } catch (error) {
+    if (!isMissingArchivedColumn(error)) throw error;
+    rows = await sql`SELECT * FROM pros WHERE id = ${id}`;
+  }
   return rows[0] ? rowToProProfile(rows[0]) : undefined;
 }
 
@@ -48,10 +59,16 @@ export async function matchPro(
 ): Promise<ProMatch | null> {
   const sql = getSql();
   // jsonb containment: does the trades array contain this slug?
-  const rows = await sql`
-    SELECT * FROM pros
-    WHERE trades @> ${JSON.stringify([tradeSlug])}::jsonb
-  `;
+  let rows;
+  try {
+    rows = await sql`
+      SELECT * FROM pros
+      WHERE trades @> ${JSON.stringify([tradeSlug])}::jsonb AND archived_at IS NULL
+    `;
+  } catch (error) {
+    if (!isMissingArchivedColumn(error)) throw error;
+    rows = await sql`SELECT * FROM pros WHERE trades @> ${JSON.stringify([tradeSlug])}::jsonb`;
+  }
   if (rows.length === 0) return null;
 
   // Rank candidates by real distance to the searched point.

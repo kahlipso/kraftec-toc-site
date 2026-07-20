@@ -34,11 +34,16 @@ function rowToWorkOrder(row: Record<string, unknown>): WorkOrder {
   };
 }
 
-/** All work orders, for the homepage list. */
+/** Newest completion date first ("Mar 12, 2025" strings parse fine as dates). */
+function byMostRecent(a: WorkOrder, b: WorkOrder): number {
+  return new Date(b.completedDate).getTime() - new Date(a.completedDate).getTime();
+}
+
+/** All work orders, most recently completed first. */
 export async function getRecentWorkOrders(): Promise<WorkOrder[]> {
   const sql = getSql();
-  const rows = await sql`SELECT * FROM work_orders ORDER BY id DESC`;
-  return rows.map(rowToWorkOrder);
+  const rows = await sql`SELECT * FROM work_orders`;
+  return rows.map(rowToWorkOrder).sort(byMostRecent);
 }
 
 /** A single work order by id, or undefined if it doesn't exist. */

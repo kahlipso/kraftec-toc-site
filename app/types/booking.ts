@@ -19,4 +19,14 @@ export type DayColumn = {
 
 export type BookingResult =
   | { ok: true; welcomeBack: boolean }
-  | { ok: false; error: 'invalid_phone' | 'invalid_slot' | 'slot_taken' | 'missing_fields' };
+  | { ok: false; error: 'invalid_phone' | 'invalid_slot' | 'slot_taken' | 'missing_fields' | 'unauthenticated' };
+
+export type CustomerBooking = {
+  id: string;
+  proName: string;
+  proInitials: string;
+  slotStart: string;
+  isPast: boolean;
+  address: string;
+  description: string;
+};

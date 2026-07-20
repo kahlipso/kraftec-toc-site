@@ -1,5 +1,5 @@
 import { getSql } from './db';
-import type { BookingResult, DayColumn } from '@/app/types/booking';
+import type { BookingResult, CustomerBooking, DayColumn } from '@/app/types/booking';
 
 // Booking data layer. Availability is computed: fixed daily start times across
 // the next business days, minus rows that already exist in `bookings`. Booking
@@ -141,4 +141,29 @@ export async function createBooking(input: CreateBookingInput): Promise<BookingR
   }
 
   return { ok: true, welcomeBack };
+}
+
+/** Booking requests for an authenticated customer's phone, newest appointments first. */
+export async function getBookingsForPhone(phoneInput: string): Promise<CustomerBooking[]> {
+  const phone = normalizePhone(phoneInput);
+  if (!phone) return [];
+
+  const sql = getSql();
+  const rows = await sql`
+    SELECT b.id, b.slot_start, b.slot_start < NOW() AS is_past, b.address, b.description, p.name AS pro_name, p.initials AS pro_initials
+    FROM bookings b
+    JOIN customers c ON c.id = b.customer_id
+    JOIN pros p ON p.id = b.pro_id
+    WHERE c.phone = ${phone}
+    ORDER BY b.slot_start DESC
+  `;
+  return rows.map((row) => ({
+    id: row.id as string,
+    proName: row.pro_name as string,
+    proInitials: row.pro_initials as string,
+    slotStart: new Date(row.slot_start as string).toISOString(),
+    isPast: row.is_past as boolean,
+    address: row.address as string,
+    description: row.description as string,
+  }));
 }

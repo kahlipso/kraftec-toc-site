@@ -1,6 +1,7 @@
 'use server';
 
 import { createBooking, normalizePhone } from '@/app/lib/bookings';
+import { getAuthenticatedCustomer } from '@/app/lib/auth';
 import { getPro } from '@/app/lib/pros';
 import { sendSms, formatSlotForSms } from '@/app/lib/sms';
 import type { BookingResult } from '@/app/types/booking';
@@ -10,20 +11,20 @@ import type { BookingResult } from '@/app/types/booking';
 export async function submitBooking(input: {
   proId: string;
   slotIso: string;
-  name: string;
-  phone: string;
   address: string;
   description: string;
 }): Promise<BookingResult> {
   const pro = await getPro(input.proId);
   if (!pro) return { ok: false, error: 'invalid_slot' };
+  const customer = await getAuthenticatedCustomer();
+  if (!customer) return { ok: false, error: 'unauthenticated' };
 
-  const result = await createBooking(input);
+  const result = await createBooking({ ...input, name: customer.name, phone: customer.phone });
 
   // Confirmation text — only after the booking is safely in the database, and
   // best-effort: an SMS failure must never fail a booking that already exists.
   if (result.ok) {
-    const to = normalizePhone(input.phone);
+    const to = normalizePhone(customer.phone);
     if (to) {
       const firstName = pro.contactName.split(' ')[0];
       await sendSms(

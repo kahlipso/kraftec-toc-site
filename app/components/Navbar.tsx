@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Inter } from 'next/font/google';
+import NavbarAuth from './NavbarAuth';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -30,7 +31,7 @@ export default function Navbar() {
       </nav>
 
       <div className="text-black nav-login px-5">
-        <Link href="/get-started" className="btn">Login</Link>
+        <NavbarAuth />
       </div>
     </header>
   );

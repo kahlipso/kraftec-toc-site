@@ -56,3 +56,17 @@ Work Order Postgres:
 
 2. Front page will pull from Google Maps API Key
 3. Will Use Google Places Autocomplete API Key.
+
+## Founder admin setup
+
+The internal operations console lives at `/admin`. Before using it:
+
+1. In the Neon SQL Editor, run [`scripts/admin-schema.sql`](./scripts/admin-schema.sql).
+2. Add your own account email to `ADMIN_EMAILS` in `.env.local` and your Vercel environment variables. Multiple emails can be separated by commas.
+3. Ensure `BLOB_READ_WRITE_TOKEN` is available if you want to upload work-order photos from the admin form.
+
+Only an authenticated account whose email is included in `ADMIN_EMAILS` can access admin pages or run admin mutations.
+
+## Customer-table unification
+
+Kraftec uses `customers` as the single source of truth for both booking and login data. For an existing database that still has `customer_accounts`, deploy the unified-customer code and then run [`scripts/unify-customers.sql`](./scripts/unify-customers.sql) once in Neon. It copies credentials into `customers`, preserves valid sessions, and removes the duplicate table only after verification.

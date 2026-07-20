@@ -5,11 +5,14 @@ import Link from 'next/link';
 import { APIProvider } from '@vis.gl/react-google-maps';
 import { usePlacesAutocomplete } from '@/app/lib/finder/usePlacesAutocomplete';
 import { submitBooking } from './actions';
+import AuthModals from '@/app/components/AuthModals';
+import type { AuthenticatedCustomer } from '@/app/lib/auth';
 import type { DayColumn, SlotCell } from '@/app/types/booking';
 
 const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
 type Step = 'time' | 'details' | 'done';
+type AuthStage = 'phone' | 'login' | 'register' | null;
 
 // Service-address input with Places autocomplete. Unlike find-pro (which needs
 // coordinates), booking only needs address TEXT — so free typing stays valid and
@@ -102,8 +105,8 @@ export default function BookingFlow({
   // Locally-learned taken slots (e.g. we lost a race) layered over the server grid.
   const [takenIsos, setTakenIsos] = useState<Set<string>>(new Set());
 
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
+  const [customer, setCustomer] = useState<AuthenticatedCustomer | null>(null);
+  const [authStage, setAuthStage] = useState<AuthStage>(null);
   const [address, setAddress] = useState('');
   const [description, setDescription] = useState('');
   const [pending, setPending] = useState(false);
@@ -111,7 +114,7 @@ export default function BookingFlow({
   const [welcomeBack, setWelcomeBack] = useState(false);
 
   const activeIndex = step === 'time' ? 1 : step === 'details' ? 2 : 3;
-  const detailsComplete = name.trim() && phone.trim() && address.trim();
+  const detailsComplete = Boolean(customer && address.trim());
 
   async function handleConfirm() {
     if (!selected || pending) return;
@@ -121,8 +124,6 @@ export default function BookingFlow({
     const result = await submitBooking({
       proId,
       slotIso: selected.slot.iso,
-      name,
-      phone,
       address,
       description,
     });
@@ -140,13 +141,23 @@ export default function BookingFlow({
       setStep('time');
       setErrorMsg('That slot was just booked by someone else — please pick another.');
     } else if (result.error === 'invalid_phone') {
-      setErrorMsg('That phone number doesn’t look right — use a 10-digit US number.');
+      setErrorMsg('Your account phone number needs to be updated before booking.');
+    } else if (result.error === 'unauthenticated') {
+      setAuthStage('phone');
+      setErrorMsg('Please sign in to finish booking.');
     } else if (result.error === 'missing_fields') {
       setErrorMsg('Please fill in your name and address.');
     } else {
       setErrorMsg('Something went wrong — please re-select your time slot.');
       setStep('time');
     }
+  }
+
+  function handleAuthenticated(authenticatedCustomer: AuthenticatedCustomer) {
+    setCustomer(authenticatedCustomer);
+    setAuthStage(null);
+    setErrorMsg(null);
+    setStep('details');
   }
 
   const content = (
@@ -190,7 +201,11 @@ export default function BookingFlow({
                         key={slot.iso}
                         type="button"
                         disabled={taken}
-                        onClick={() => setSelected({ slot, day: day.label })}
+                        onClick={() => {
+                          setSelected({ slot, day: day.label });
+                          setErrorMsg(null);
+                          setAuthStage('phone');
+                        }}
                         className={`rounded-xl border py-2.5 text-center text-sm transition ${
                           taken
                             ? 'cursor-not-allowed border-gray-100 bg-gray-50 text-zinc-300'
@@ -221,7 +236,7 @@ export default function BookingFlow({
             <button
               type="button"
               disabled={!selected}
-              onClick={() => setStep('details')}
+              onClick={() => setAuthStage('phone')}
               className="rounded-full bg-[#d01111] px-8 py-3 text-sm font-semibold text-white transition hover:bg-[#d01111]/90 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
             >
               Continue{selected ? ` with ${selected.day} · ${selected.slot.label}` : ''} →
@@ -251,30 +266,14 @@ export default function BookingFlow({
           )}
 
           <div className="mt-8 flex flex-col gap-4">
-            <label className="block">
-              <span className="mb-1.5 block text-sm font-medium text-black">Your name</span>
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-black placeholder:text-gray-400 focus:border-gray-400 focus:outline-none"
-                placeholder="Jane Smith"
-              />
-            </label>
-            <label className="block">
-              <span className="mb-1.5 block text-sm font-medium text-black">Phone number</span>
-              <input
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                inputMode="tel"
-                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-black placeholder:text-gray-400 focus:border-gray-400 focus:outline-none"
-                placeholder="(949) 555-1234"
-              />
-              <span className="mt-1 block text-xs text-zinc-400">
-                By booking, you agree to receive a text confirming your appointment and updates
-                about it. Msg &amp; data rates may apply. Reply STOP to opt out. We never sell your
-                number.
-              </span>
-            </label>
+            {customer && (
+              <div className="rounded-xl border border-gray-200 bg-[#fafafa] px-4 py-3">
+                <p className="text-sm font-semibold text-black">Booking as {customer.name}</p>
+                <p className="mt-0.5 text-xs text-zinc-500">
+                  {customer.phone} · We&apos;ll text this number with appointment updates.
+                </p>
+              </div>
+            )}
             <div>
               <span className="mb-1.5 block text-sm font-medium text-black">Service address</span>
               {apiKey ? (
@@ -360,5 +359,17 @@ export default function BookingFlow({
 
   // The autocomplete hook needs the Maps JS context; without a key the plain
   // input fallback renders and everything else still works.
-  return apiKey ? <APIProvider apiKey={apiKey}>{content}</APIProvider> : content;
+  const flow = apiKey ? <APIProvider apiKey={apiKey}>{content}</APIProvider> : content;
+  return (
+    <>
+      {flow}
+      <AuthModals
+        stage={authStage}
+        onClose={() => setAuthStage(null)}
+        onStageChange={setAuthStage}
+        onAuthenticated={handleAuthenticated}
+        booking
+      />
+    </>
+  );
 }

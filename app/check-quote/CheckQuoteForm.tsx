@@ -1,11 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import { checkQuote } from './actions';
+import QuoteResult from './QuoteResult';
+import type { QuoteCheckResult } from '@/app/types/quote';
 
-const services = [
-  'HVAC', 'Plumbing', 'Electrical', 'Roofing', 'Landscaping',
-  'Painting', 'Cleaning', 'Remodeling', 'Handyperson', 'Windows', 'Concrete',
-];
+import { trades } from '@/app/lib/trades';
 
 type LineItem = { item: string; qty: string; cost: string };
 
@@ -28,7 +28,9 @@ export default function CheckQuoteForm() {
   const [rows, setRows] = useState<LineItem[]>([{ ...emptyRow }, { ...emptyRow }, { ...emptyRow }]);
   const [notes, setNotes] = useState('');
   const [fileName, setFileName] = useState('');
-  const [submitted, setSubmitted] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [result, setResult] = useState<Extract<QuoteCheckResult, { ok: true }> | null>(null);
 
   function updateRow(i: number, field: keyof LineItem, value: string) {
     setRows((prev) => prev.map((r, idx) => (idx === i ? { ...r, [field]: value } : r)));
@@ -38,15 +40,34 @@ export default function CheckQuoteForm() {
     setRows((prev) => [...prev, { ...emptyRow }]);
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setSubmitted(true);
+    if (pending) return;
+    setErrorMsg(null);
+
+    if (!service) {
+      setErrorMsg('Pick the kind of work first (step 01).');
+      return;
+    }
+
+    setPending(true);
+    const response = await checkQuote({ service, rows, notes });
+    setPending(false);
+
+    if (response.ok) {
+      setResult(response);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (response.error === 'no_priced_lines') {
+      setErrorMsg('Add at least one line item with a price (step 02).');
+    } else {
+      setErrorMsg('Something went wrong — please check the form and try again.');
+    }
   }
 
-  const total = rows.reduce((sum, r) => {
-    const n = parseFloat(r.cost.replace(/[^0-9.]/g, ''));
-    return sum + (Number.isFinite(n) ? n : 0);
-  }, 0);
+  // The result replaces the form in place; "Check another quote" brings it back.
+  if (result) {
+    return <QuoteResult result={result} onReset={() => setResult(null)} />;
+  }
 
   return (
     <form onSubmit={handleSubmit}>
@@ -59,8 +80,8 @@ export default function CheckQuoteForm() {
         className="mt-4 w-full rounded-xl border border-gray-200 bg-white px-4 py-3.5 text-sm text-black focus:border-gray-400 focus:outline-none"
       >
         <option value="">Select a service…</option>
-        {services.map((s) => (
-          <option key={s} value={s}>{s}</option>
+        {trades.map((t) => (
+          <option key={t.slug} value={t.slug}>{t.name}</option>
         ))}
       </select>
 
@@ -151,23 +172,19 @@ export default function CheckQuoteForm() {
       />
 
       {/* Submit */}
+      {errorMsg && (
+        <p className="mt-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-center text-sm text-amber-800">
+          {errorMsg}
+        </p>
+      )}
       <button
         type="submit"
-        className="mt-10 w-full rounded-full bg-[#d01111] py-4 text-sm font-semibold text-white transition hover:bg-[#d01111]/90 active:scale-[0.99]"
+        disabled={pending}
+        className="mt-10 w-full rounded-full bg-[#d01111] py-4 text-sm font-semibold text-white transition hover:bg-[#d01111]/90 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
       >
-        Check my quote →
+        {pending ? 'Analyzing your quote…' : 'Check my quote →'}
       </button>
 
-      {/* Submit acknowledgment (placeholder until the result view is built) */}
-      {submitted && (
-        <div className="mt-6 rounded-xl border border-green-200 bg-green-50 p-5 text-center">
-          <p className="text-sm font-semibold text-green-800">Got it — we&apos;re comparing your quote against verified jobs near you.</p>
-          <p className="mt-1 text-xs text-green-700">
-            {total > 0 ? `Quoted total: $${total.toLocaleString()}. ` : ''}
-            The full fair-range result view is coming next.
-          </p>
-        </div>
-      )}
     </form>
   );
 }

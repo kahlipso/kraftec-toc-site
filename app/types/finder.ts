@@ -8,7 +8,7 @@
 
 export type LatLng = { lat: number; lng: number };
 
-export type ProStatus = 'available' | 'finishing' | 'en_route';
+export type ProStatus = 'idle' | 'working' | 'finishing';
 
 export type ProPresence = {
   id: string;
@@ -21,16 +21,12 @@ export type ProPresence = {
   statusLabel: string;
   /** Right-hand list meta line, e.g. "0.8 mi · 12 min ETA". */
   meta: string;
-  /** Current map position. For en_route pros this advances along `routePath`. */
+  /** This pro's fixed base location — the center of their coverage circle. */
   position: LatLng;
   etaMinutes: number;
   distanceMiles: number;
-  /** The home this pro is currently driving to (only for en_route). */
-  destination?: LatLng;
-  /** Road-following path from pro → destination. Straight line until resolved. */
-  routePath?: LatLng[];
-  /** 0..1 progress of the pro along `routePath`. */
-  progress?: number;
+  /** Radius (miles) this pro serves around `position`. */
+  radiusMiles: number;
 };
 
 export type FinderSnapshot = {

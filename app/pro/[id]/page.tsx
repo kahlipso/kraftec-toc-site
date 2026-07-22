@@ -1,8 +1,9 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getPro } from '@/app/lib/pros';
 import { getWorkOrdersByPro } from '@/app/lib/work-orders';
+import { haversineMiles } from '@/app/lib/finder/geo';
 import WorkOrderCard from '@/app/components/WorkOrderCard';
+import BookGate from './BookGate';
 
 const tabs = [
   { label: 'Overview', href: '#top' },
@@ -24,14 +25,26 @@ function CheckCircle() {
 
 export default async function Page({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ lat?: string; lng?: string; label?: string }>;
 }) {
   const { id } = await params;
   const pro = await getPro(id);
   if (!pro) notFound();
 
   const workOrders = await getWorkOrdersByPro(pro.id);
+
+  // If the homeowner arrived with a searched address (from the homepage
+  // finder or find-pro), re-derive whether this pro actually covers it.
+  const { lat, lng, label } = await searchParams;
+  const searchedLat = Number(lat);
+  const searchedLng = Number(lng);
+  const hasSearchedLocation = lat !== undefined && lng !== undefined && Number.isFinite(searchedLat) && Number.isFinite(searchedLng);
+  const inRange =
+    !hasSearchedLocation ||
+    haversineMiles({ lat: searchedLat, lng: searchedLng }, { lat: pro.lat, lng: pro.lng }) <= pro.serviceRadiusMiles;
 
   return (
     <div id="top" className="bg-white pb-20">
@@ -54,12 +67,7 @@ export default async function Page({
               </li>
             ))}
           </ul>
-          <Link
-            href={`/pro/${pro.id}/book`}
-            className="ml-4 shrink-0 rounded-full bg-[#d01111] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#d01111]/90 active:scale-95"
-          >
-            Book a time slot →
-          </Link>
+          <BookGate proId={pro.id} proName={pro.name} inRange={inRange} searchedLabel={label} />
         </div>
       </nav>
 

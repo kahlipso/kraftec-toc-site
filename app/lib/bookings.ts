@@ -98,6 +98,27 @@ export type CreateBookingInput = {
 };
 
 /**
+ * Upsert-by-phone: DO NOTHING keeps the existing record (silent linking) — a
+ * stranger typing someone's number never overwrites or reveals their data.
+ * Shared by the public booking flow and the admin "new request" action.
+ */
+export async function findOrCreateCustomerId(
+  sql: ReturnType<typeof getSql>,
+  name: string,
+  phone: string,
+): Promise<{ id: string; isNew: boolean }> {
+  const inserted = await sql`
+    INSERT INTO customers (phone, name) VALUES (${phone}, ${name})
+    ON CONFLICT (phone) DO NOTHING
+    RETURNING id
+  `;
+  const id =
+    (inserted[0]?.id as string | undefined) ??
+    ((await sql`SELECT id FROM customers WHERE phone = ${phone}`)[0].id as string);
+  return { id, isNew: inserted.length > 0 };
+}
+
+/**
  * Create a booking: register (or silently link) the customer by phone, then
  * insert the booking. Returns welcomeBack so the UI can acknowledge returning
  * customers without ever revealing the stored name.
@@ -114,18 +135,8 @@ export async function createBooking(input: CreateBookingInput): Promise<BookingR
   if (!validSlotIsos().has(input.slotIso)) return { ok: false, error: 'invalid_slot' };
 
   const sql = getSql();
-
-  // Upsert-by-phone: DO NOTHING keeps the existing record (silent linking) —
-  // a stranger typing someone's number never overwrites or reveals their data.
-  const inserted = await sql`
-    INSERT INTO customers (phone, name) VALUES (${phone}, ${name})
-    ON CONFLICT (phone) DO NOTHING
-    RETURNING id
-  `;
-  const welcomeBack = inserted.length === 0;
-  const customerId =
-    (inserted[0]?.id as string | undefined) ??
-    ((await sql`SELECT id FROM customers WHERE phone = ${phone}`)[0].id as string);
+  const { id: customerId, isNew } = await findOrCreateCustomerId(sql, name, phone);
+  const welcomeBack = !isNew;
 
   try {
     await sql`

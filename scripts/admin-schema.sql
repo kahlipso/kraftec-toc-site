@@ -15,6 +15,9 @@ BEGIN
   ALTER TABLE work_orders ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
 
   ALTER TABLE pros ADD COLUMN IF NOT EXISTS archived_at TIMESTAMPTZ;
+  ALTER TABLE pros ADD COLUMN IF NOT EXISTS service_radius_miles DOUBLE PRECISION NOT NULL DEFAULT 15;
+  ALTER TABLE pros ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'idle'
+    CHECK (status IN ('idle', 'working', 'finishing'));
 
   CREATE TABLE IF NOT EXISTS quote_benchmarks (
     trade_slug TEXT PRIMARY KEY,
@@ -22,4 +25,11 @@ BEGIN
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   );
 
+  -- Demo coverage radius + status per seeded pro, so the map shows all 3 states.
+  UPDATE pros SET service_radius_miles = 12, status = 'working' WHERE id = 'martinez-reyes';
+  UPDATE pros SET service_radius_miles = 20, status = 'finishing' WHERE id = 'desert-cool';
+  UPDATE pros SET service_radius_miles = 15, status = 'idle' WHERE id = 'valley-air';
+  UPDATE pros SET service_radius_miles = 18, status = 'idle' WHERE id = 'sunwest';
+
 END $$;
+/

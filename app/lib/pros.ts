@@ -15,6 +15,8 @@ function rowToProProfile(row: Record<string, unknown>): ProProfile {
     yearsOperating: row.years_operating as number,
     lat: row.lat as number,
     lng: row.lng as number,
+    serviceRadiusMiles: row.service_radius_miles as number,
+    status: row.status as ProProfile['status'],
     trades: row.trades as string[],
     contactName: row.contact_name as string,
     note: row.note as string,
@@ -71,13 +73,15 @@ export async function matchPro(
   }
   if (rows.length === 0) return null;
 
-  // Rank candidates by real distance to the searched point.
+  // Rank candidates by real distance to the searched point, then drop anyone
+  // whose coverage radius doesn't actually reach that point.
   const ranked = rows
     .map((row) => {
       const pro = rowToProProfile(row);
       return { pro, distanceMiles: haversineMiles({ lat, lng }, { lat: pro.lat, lng: pro.lng }) };
     })
+    .filter((candidate) => candidate.distanceMiles <= candidate.pro.serviceRadiusMiles)
     .sort((a, b) => a.distanceMiles - b.distanceMiles);
 
-  return ranked[0];
+  return ranked[0] ?? null;
 }

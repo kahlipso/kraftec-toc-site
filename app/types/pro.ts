@@ -43,6 +43,8 @@ export type ProProfile = {
   yearsOperating: number;
   lat: number;
   lng: number;
+  serviceRadiusMiles: number;
+  status: 'idle' | 'working' | 'finishing';
   trades: string[];
   contactName: string;
   note: string;

@@ -195,10 +195,10 @@ export default function MatchOverlay({
           <div className="flex flex-col items-center py-8 text-center">
             <p className="text-xs font-semibold uppercase tracking-widest text-[#d01111]">No match yet</p>
             <h2 className="mt-3 text-2xl font-bold tracking-tight text-black">
-              No {trade.name} pros near you yet
+              No {trade.name} pros cover your address yet
             </h2>
             <p className="mt-2 max-w-sm text-sm text-zinc-500">
-              We&apos;re expanding our network — check back soon, or try a different trade.
+              {`We couldn't find a ${trade.name} pro whose coverage reaches your address — we're expanding our network, so check back soon or try a different trade.`}
             </p>
             <button
               type="button"

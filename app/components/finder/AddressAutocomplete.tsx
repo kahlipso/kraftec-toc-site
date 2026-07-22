@@ -14,9 +14,9 @@ export default function AddressAutocomplete({
     usePlacesAutocomplete(onSelect);
 
   return (
-    <div ref={containerRef} className="relative mt-8 w-full max-w-2xl">
-      <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-white p-1.5 pl-5 shadow-sm focus-within:border-gray-300">
-        <svg className="size-5 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <div ref={containerRef} className="relative mt-6 w-full max-w-2xl">
+      <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-white p-1 pl-4 shadow-sm focus-within:border-gray-300">
+        <svg className="size-4 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
           <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
         </svg>
@@ -31,7 +31,7 @@ export default function AddressAutocomplete({
         <button
           type="button"
           onClick={() => suggestions[0] && choose(suggestions[0])}
-          className="rounded-full bg-[#d01111] px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-[#d01111]/90 active:scale-95"
+          className="rounded-full bg-[#d01111] px-5 py-1.5 text-sm font-semibold text-white transition hover:bg-[#d01111]/90 active:scale-95"
         >
           Search
         </button>

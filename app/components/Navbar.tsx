@@ -10,7 +10,7 @@ const inter = Inter({
 
 export default function Navbar() {
   return (
-    <header className={`${inter.className} flex items-center justify-between px-6 py-5 bg-white border-b border-gray-200`}>
+    <header className={`${inter.className} flex items-center justify-between px-6 py-3 bg-white border-b border-gray-200`}>
 
       <Link className="px-2" href="/">
         <Image

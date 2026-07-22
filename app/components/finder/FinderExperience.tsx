@@ -70,8 +70,8 @@ export default function FinderExperience() {
         {hasMaps ? (
           <AddressAutocomplete onSelect={(loc, label) => setSearched({ loc, label })} />
         ) : (
-          <div className="mt-8 flex w-full max-w-2xl items-center gap-2 rounded-full border border-gray-200 bg-white p-1.5 pl-5 shadow-sm">
-            <svg className="size-5 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <div className="mt-6 flex w-full max-w-2xl items-center gap-2 rounded-full border border-gray-200 bg-white p-1 pl-4 shadow-sm">
+            <svg className="size-4 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
               <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
             </svg>
@@ -80,13 +80,13 @@ export default function FinderExperience() {
               placeholder="Enter your address to see pros near you…"
               className="flex-1 bg-transparent text-sm text-black placeholder:text-gray-400 focus:outline-none"
             />
-            <span className="rounded-full bg-[#d01111] px-6 py-2.5 text-sm font-semibold text-white">Search</span>
+            <span className="rounded-full bg-[#d01111] px-5 py-1.5 text-sm font-semibold text-white">Search</span>
           </div>
         )}
       </div>
 
       {/* Full-bleed map — a backdrop band you scroll past */}
-      <div className="relative mt-12 h-[78vh] min-h-[560px] w-full overflow-hidden border-y border-gray-200 bg-[#f3f3f1]">
+      <div className="relative mt-8 h-[82vh] min-h-[600px] w-full overflow-hidden border-y border-gray-200 bg-[#f3f3f1]">
         {hasMaps ? (
           <LiveMap center={center} pros={visiblePros} mapId={mapId!} onProClick={handleProClick} />
         ) : (

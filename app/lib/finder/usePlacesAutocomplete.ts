@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useMapsLibrary } from '@vis.gl/react-google-maps';
+import { pickCity } from '@/app/lib/finder/city';
 import type { LatLng } from '@/app/types/finder';
 
 export type Suggestion = {
@@ -10,7 +11,10 @@ export type Suggestion = {
   prediction: google.maps.places.PlacePrediction;
 };
 
-export function usePlacesAutocomplete(onSelect: (location: LatLng, label: string) => void) {
+/** What a chosen address hands back: where it is, how to print it, its city. */
+export type SelectedPlace = { location: LatLng; label: string; city: string | null };
+
+export function usePlacesAutocomplete(onSelect: (place: SelectedPlace) => void) {
   const placesLib = useMapsLibrary('places');
   const [value, setValue] = useState('');
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
@@ -78,9 +82,17 @@ export function usePlacesAutocomplete(onSelect: (location: LatLng, label: string
     setSuggestions([]);
     try {
       const place = suggestion.prediction.toPlace();
-      await place.fetchFields({ fields: ['location', 'formattedAddress'] });
+      // addressComponents is what carries the city, and it rides along on the
+      // same fetch as the coordinates — no second API and no Geocoding call.
+      await place.fetchFields({ fields: ['location', 'addressComponents'] });
       if (place.location) {
-        onSelect({ lat: place.location.lat(), lng: place.location.lng() }, suggestion.label);
+        onSelect({
+          location: { lat: place.location.lat(), lng: place.location.lng() },
+          label: suggestion.label,
+          city: pickCity(
+            (place.addressComponents ?? []).map((c) => ({ types: c.types, name: c.longText })),
+          ),
+        });
       }
     } catch {
       /* ignore resolve failures */

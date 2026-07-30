@@ -5,7 +5,6 @@ import Image from 'next/image';
 import { APIProvider } from '@vis.gl/react-google-maps';
 import { usePlacesAutocomplete } from '@/app/lib/finder/usePlacesAutocomplete';
 import { trades } from '@/app/lib/trades';
-import type { LatLng } from '@/app/types/finder';
 import MatchOverlay from './MatchOverlay';
 
 const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
@@ -16,7 +15,7 @@ type Picked = { lat: number; lng: number; label: string };
 // different body. Reports a confirmed pick up to TradePicker via onPick.
 function AddressSearch({ onPick }: { onPick: (p: Picked | null) => void }) {
   const { containerRef, value, setValue, suggestions, open, setOpen, choose } =
-    usePlacesAutocomplete((loc: LatLng, label: string) => onPick({ ...loc, label }));
+    usePlacesAutocomplete(({ location, label }) => onPick({ ...location, label }));
 
   return (
     <div ref={containerRef} className="relative flex-1">

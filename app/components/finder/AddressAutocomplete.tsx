@@ -1,14 +1,16 @@
 'use client';
 
-import { usePlacesAutocomplete } from '@/app/lib/finder/usePlacesAutocomplete';
-import type { LatLng } from '@/app/types/finder';
+import {
+  usePlacesAutocomplete,
+  type SelectedPlace,
+} from '@/app/lib/finder/usePlacesAutocomplete';
 
 // The hero's address bar. All the Google logic lives in usePlacesAutocomplete —
 // this file is only the look: the pill input, the Search button, the dropdown.
 export default function AddressAutocomplete({
   onSelect,
 }: {
-  onSelect: (location: LatLng, label: string) => void;
+  onSelect: (place: SelectedPlace) => void;
 }) {
   const { containerRef, value, setValue, suggestions, open, setOpen, choose } =
     usePlacesAutocomplete(onSelect);

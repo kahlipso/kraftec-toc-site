@@ -1,12 +1,13 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { APIProvider } from '@vis.gl/react-google-maps';
-import { useFinder } from '@/app/lib/finder/useFinder';
 import { haversineMiles } from '@/app/lib/finder/geo';
-import type { LatLng, ProPresence } from '@/app/types/finder';
+import { useCenterCity } from '@/app/lib/finder/useCenterCity';
+import { useDeviceLocation } from '@/app/lib/finder/useDeviceLocation';
+import type { FinderSnapshot, LatLng, ProPresence } from '@/app/types/finder';
 import LiveMap, { type MapPro } from './LiveMap';
 import StaticMapFallback from './StaticMapFallback';
 import AddressAutocomplete from './AddressAutocomplete';
@@ -22,7 +23,16 @@ const statusStyles: Record<ProPresence['status'], { pill: string; dot: string }>
   working: { pill: 'bg-blue-50 text-blue-700', dot: 'bg-blue-500' },
 };
 
-type Searched = { loc: LatLng; label: string };
+type Searched = { loc: LatLng; label: string; city: string | null };
+
+// There is no live GPS/telemetry feed yet, so ETA is derived from straight-line
+// distance at an assumed city-driving speed rather than stored per pro. Replace
+// this with a routing/dispatch estimate once contractor tracking exists.
+const AVG_SPEED_MPH = 25;
+
+function etaMinutesFor(distanceMiles: number) {
+  return Math.max(5, Math.round((distanceMiles / AVG_SPEED_MPH) * 60));
+}
 
 function proHref(id: string, searched: Searched | null) {
   if (!searched) return `/pro/${id}`;
@@ -34,26 +44,85 @@ function proHref(id: string, searched: Searched | null) {
   return `/pro/${id}?${params.toString()}`;
 }
 
-export default function FinderExperience() {
-  const { snapshot } = useFinder();
+/**
+ * Reports the city Google labels the current map center (null when it can't be
+ * named). Renders nothing — it only exists so the lookup hook runs inside
+ * <APIProvider>, which is where the Maps libraries are available.
+ */
+function CenterCityWatcher({
+  center,
+  fallback,
+  onResolve,
+}: {
+  center: LatLng;
+  fallback: string;
+  onResolve: (city: string | null) => void;
+}) {
+  const city = useCenterCity(center, fallback);
+  useEffect(() => onResolve(city), [city, onResolve]);
+  return null;
+}
+
+export default function FinderExperience({ snapshot }: { snapshot: FinderSnapshot }) {
   const router = useRouter();
+  const device = useDeviceLocation();
   const [searched, setSearched] = useState<Searched | null>(null);
   const [outOfRangePro, setOutOfRangePro] = useState<ProPresence | null>(null);
+  // The headline names the map's city. A searched address knows its own city
+  // (Places gives it to us), so that wins outright; otherwise we show whatever
+  // the center lookup last resolved, starting from the server-derived city.
+  const [geocodedCity, setGeocodedCity] = useState<string | null>(snapshot.centerCity);
+  const city = searched?.city ?? geocodedCity;
 
   // Every pro is shown; each is individually marked in/out of range of the
   // searched address based on its own coverage radius (no flat cutoff).
-  const center = searched?.loc ?? snapshot.center;
+  //
+  // Center precedence: an address the visitor typed beats the location their
+  // device reported, which beats the default market from the server.
+  const center = searched?.loc ?? device.location ?? snapshot.center;
   const visiblePros: MapPro[] = useMemo(
     () =>
-      snapshot.pros.map((p) => ({
-        ...p,
-        inRange: !searched || haversineMiles(p.position, searched.loc) <= p.radiusMiles,
-      })),
-    [snapshot.pros, searched],
+      snapshot.pros.map((p) => {
+        // Measured from the searched address once there is one, otherwise from
+        // the default map center — so the numbers always match what's on screen.
+        const distanceMiles = haversineMiles(p.position, center);
+        return {
+          ...p,
+          distanceMiles,
+          etaMinutes: etaMinutesFor(distanceMiles),
+          inRange: !searched || distanceMiles <= p.radiusMiles,
+        };
+      }),
+    [snapshot.pros, searched, center],
   );
-  const jobsInProgress = visiblePros.filter(
-    (p) => p.inRange && (p.status === 'working' || p.status === 'finishing'),
+  const inRangePros = visiblePros.filter((p) => p.inRange);
+  const jobsInProgress = inRangePros.filter(
+    (p) => p.status === 'working' || p.status === 'finishing',
   ).length;
+  const avgEta = inRangePros.length
+    ? Math.round(inRangePros.reduce((sum, p) => sum + p.etaMinutes, 0) / inRangePros.length)
+    : null;
+
+  // The button both asks for permission the first time and, once a visitor has
+  // searched an address, takes them back to where they actually are.
+  const usingDeviceLocation = device.location !== null && !searched;
+  const deviceButton = usingDeviceLocation
+    ? { label: 'Centered on your current location', disabled: true }
+    : device.status === 'locating'
+      ? { label: 'Finding your location…', disabled: true }
+      : device.status === 'denied'
+        ? { label: 'Location blocked — enter your address above', disabled: true }
+        : device.status === 'unsupported'
+          ? { label: 'Location unavailable on this device', disabled: true }
+          : device.status === 'error'
+            ? { label: 'Couldn’t get your location — try again', disabled: false }
+            : { label: 'Use my current location', disabled: false };
+
+  function requestDeviceLocation() {
+    // Drop the searched address, or it would keep winning the center.
+    setSearched(null);
+    device.request();
+  }
 
   function handleProClick(pro: MapPro) {
     if (pro.inRange) {
@@ -65,10 +134,49 @@ export default function FinderExperience() {
 
   const inner = (
     <>
+      {/* Heading — names whichever city the map below is centered on */}
+      <div className="relative mx-auto w-full max-w-5xl px-6">
+        <div className="flex flex-col items-center text-center">
+          <h1 className="text-4xl sm:text-4xl font-bold tracking-tight text-black leading-tight max-w-3xl">
+            Find your pro in{' '}
+            <span className="italic text-[#d01111]">{city ?? 'your area'}</span> right now.
+          </h1>
+        </div>
+      </div>
+
       {/* Address search — stays in the centered column */}
-      <div className="flex justify-center px-6">
+      <div className="flex flex-col items-center px-6">
         {hasMaps ? (
-          <AddressAutocomplete onSelect={(loc, label) => setSearched({ loc, label })} />
+          <>
+            <CenterCityWatcher
+              center={center}
+              fallback={snapshot.centerCity}
+              onResolve={setGeocodedCity}
+            />
+            <AddressAutocomplete
+              onSelect={({ location, label, city: placeCity }) =>
+                setSearched({ loc: location, label, city: placeCity })
+              }
+            />
+            <button
+              type="button"
+              onClick={requestDeviceLocation}
+              disabled={deviceButton.disabled}
+              className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-gray-500 transition-colors hover:text-[#d01111] disabled:cursor-default disabled:hover:text-gray-500"
+            >
+              <svg
+                className={`size-3.5 ${device.status === 'locating' ? 'animate-spin' : ''}`}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={1.8}
+              >
+                <circle cx="12" cy="12" r="7" />
+                <path strokeLinecap="round" d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+              </svg>
+              {deviceButton.label}
+            </button>
+          </>
         ) : (
           <div className="mt-6 flex w-full max-w-2xl items-center gap-2 rounded-full border border-gray-200 bg-white p-1 pl-4 shadow-sm">
             <svg className="size-4 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -97,9 +205,11 @@ export default function FinderExperience() {
         <div className="pointer-events-none absolute left-6 top-4 z-30 rounded-xl border border-gray-200 bg-white px-3 py-2 shadow-sm">
           <p className="flex items-center gap-1.5 text-xs font-semibold text-black">
             <span className="size-1.5 rounded-full bg-green-500" />
-            {visiblePros.filter((p) => p.inRange).length} pros nearby
+            {inRangePros.length} pros nearby
           </p>
-          <p className="text-[11px] text-gray-500">{searched ? searched.label : 'Avg ETA · 14 min'}</p>
+          <p className="text-[11px] text-gray-500">
+            {searched ? searched.label : avgEta ? `Avg ETA · ${avgEta} min` : 'Enter an address'}
+          </p>
         </div>
         <div className="pointer-events-none absolute bottom-4 left-6 z-30 flex items-center gap-3 rounded-full border border-gray-200 bg-white px-4 py-2 shadow-sm">
           <span className="flex items-center gap-1.5 text-xs font-medium text-black">
@@ -158,7 +268,10 @@ export default function FinderExperience() {
                             Not available at this address
                           </span>
                         )}
-                        <span className="text-[11px] text-gray-500">{pro.meta}</span>
+                        <span className="text-[11px] text-gray-500">
+                          {pro.distanceMiles.toFixed(1)} mi
+                          {pro.inRange ? ` · ${pro.etaMinutes} min ETA` : ' away'}
+                        </span>
                       </div>
                     </>
                   );

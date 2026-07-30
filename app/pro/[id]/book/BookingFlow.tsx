@@ -19,7 +19,7 @@ type AuthStage = 'phone' | 'login' | 'register' | null;
 // suggestions are a convenience. Both typing and picking update the parent.
 function AddressField({ onChange }: { onChange: (value: string) => void }) {
   const { containerRef, value, setValue, suggestions, open, setOpen, choose } =
-    usePlacesAutocomplete((_loc, label) => onChange(label));
+    usePlacesAutocomplete(({ label }) => onChange(label));
 
   return (
     <div ref={containerRef} className="relative">

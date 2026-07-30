@@ -16,13 +16,11 @@ export default async function RecentWorkOrders() {
               Recent Work
             </p>
             <h2 className="text-4xl sm:text-5xl font-bold tracking-tight text-black leading-tight">
-              Real jobs. Real prices.<br />
-              Verified <span className="italic text-[#d01111]">by the homeowner</span>.
+              Real jobs. Real prices.
             </h2>
             <p className="mt-4 text-sm text-zinc-500">
               Every job below was completed by a Kraftec-verified pro. Tap any card to see the
-              full story — what was wrong, what we did, what it cost, and what the homeowner
-              said 12 months later.
+              full story - what was wrong, what we did, what it cost.
             </p>
           </div>
           <Link

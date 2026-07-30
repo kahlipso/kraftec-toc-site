@@ -2,7 +2,10 @@
 
 import { useState } from 'react';
 import { APIProvider } from '@vis.gl/react-google-maps';
-import { usePlacesAutocomplete } from '@/app/lib/finder/usePlacesAutocomplete';
+import {
+  usePlacesAutocomplete,
+  type SelectedPlace,
+} from '@/app/lib/finder/usePlacesAutocomplete';
 import type { LatLng } from '@/app/types/finder';
 
 const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
@@ -17,7 +20,7 @@ const label = 'block text-sm font-medium';
 function AddressSearch({
   onResolved,
 }: {
-  onResolved: (loc: LatLng, label: string) => void;
+  onResolved: (place: SelectedPlace) => void;
 }) {
   const { containerRef, value, setValue, suggestions, open, setOpen, choose } =
     usePlacesAutocomplete(onResolved);
@@ -86,8 +89,8 @@ export default function LocationField({
       <div>
         <span className={label}>Location</span>
         <AddressSearch
-          onResolved={(loc, resolvedLabel) => {
-            setCoords(loc);
+          onResolved={({ location, label: resolvedLabel }) => {
+            setCoords(location);
             setLocationText(resolvedLabel);
           }}
         />

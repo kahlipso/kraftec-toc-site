@@ -1,5 +1,6 @@
 import { getSql } from './db';
 import { haversineMiles } from './finder/geo';
+import type { FinderSnapshot, LatLng, ProPresence, ProStatus } from '@/app/types/finder';
 import type { ProProfile } from '@/app/types/pro';
 
 // Pros now live in Postgres (table: pros). Same seam pattern as work-orders.ts:
@@ -84,4 +85,69 @@ export async function matchPro(
     .sort((a, b) => a.distanceMiles - b.distanceMiles);
 
   return ranked[0] ?? null;
+}
+
+// --- Real-Time Finder map (homepage) ---
+
+/**
+ * Where the map opens before anything is known about the visitor. This is the
+ * home market, not a derived value: the client overrides it as soon as the
+ * visitor shares their device location or searches an address.
+ */
+export const DEFAULT_FINDER_CENTER: LatLng = { lat: 41.7947, lng: -88.0128 }; // Downers Grove, IL
+const DEFAULT_FINDER_CITY = 'Downers Grove';
+
+const finderStatusLabels: Record<ProStatus, string> = {
+  idle: 'Available now',
+  working: 'On a job',
+  finishing: 'Finishing job',
+};
+
+/** "hvac-repair" -> "Hvac Repair". Only a fallback when `type` is blank. */
+function prettifyTrade(slug: string) {
+  return slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function rowToProPresence(row: Record<string, unknown>): ProPresence {
+  const status = (row.status as ProStatus) ?? 'idle';
+  const trades = (row.trades as string[] | null) ?? [];
+  return {
+    id: row.id as string,
+    name: row.name as string,
+    initials: row.initials as string,
+    trade: (row.type as string) || (trades[0] ? prettifyTrade(trades[0]) : 'Pro'),
+    rating: Number(row.rating ?? 0).toFixed(1),
+    status,
+    statusLabel: finderStatusLabels[status] ?? finderStatusLabels.idle,
+    position: { lat: Number(row.lat), lng: Number(row.lng) },
+    radiusMiles: Number(row.service_radius_miles),
+  };
+}
+
+/**
+ * Every non-archived pro, shaped for the homepage map. This is the only source
+ * the finder reads — edit a technician's address in /admin/technicians and the
+ * next request to `/` shows the new pin (the homepage is `force-dynamic`).
+ */
+export async function getFinderSnapshot(): Promise<FinderSnapshot> {
+  const sql = getSql();
+  let rows;
+  try {
+    rows = await sql`SELECT * FROM pros WHERE archived_at IS NULL ORDER BY name`;
+  } catch (error) {
+    if (!isMissingArchivedColumn(error)) throw error;
+    rows = await sql`SELECT * FROM pros ORDER BY name`;
+  }
+
+  // A pro with no coordinates can't be placed on a map; drop rather than
+  // render them at (0, 0) off the coast of Africa.
+  const placed = rows.filter(
+    (row) => Number.isFinite(Number(row.lat)) && Number.isFinite(Number(row.lng)),
+  );
+  const pros = placed.map(rowToProPresence);
+
+  // The center is deliberately NOT derived from the roster: the map opens on
+  // the home market and only moves for the visitor (device location or a
+  // searched address), so the starting view is the same for everyone.
+  return { center: DEFAULT_FINDER_CENTER, centerCity: DEFAULT_FINDER_CITY, pros };
 }

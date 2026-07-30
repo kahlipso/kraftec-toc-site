@@ -5,10 +5,15 @@ import { Map, AdvancedMarker, useMap } from '@vis.gl/react-google-maps';
 import type { LatLng, ProPresence, ProStatus } from '@/app/types/finder';
 import Circle from './Circle';
 
-// Presentational map: renders a center + a list of pros. It is source-agnostic —
-// it just draws whatever it's given, so mock and live data render identically.
+// Presentational map: renders a center + a list of pros. It just draws whatever
+// it's given; `distanceMiles`/`etaMinutes` are derived by FinderExperience from
+// the searched address, not stored on the pro.
 
-export type MapPro = ProPresence & { inRange: boolean };
+export type MapPro = ProPresence & {
+  inRange: boolean;
+  distanceMiles: number;
+  etaMinutes: number;
+};
 
 const statusColors: Record<ProStatus, string> = {
   idle: '#22c55e', // green-500
@@ -68,8 +73,9 @@ function ProMarker({ pro }: { pro: MapPro }) {
   );
 }
 
-/** Pans/zooms the map when the searched center changes (not on initial load —
- * the map's own defaultZoom should hold until the user actually searches). */
+/** Pans/zooms the map when the center changes — a searched address or the
+ * visitor's device location (not on initial load, where the map's own
+ * defaultCenter/defaultZoom hold the home market view). */
 function PanTo({ center }: { center: LatLng }) {
   const map = useMap();
   const { lat, lng } = center;
